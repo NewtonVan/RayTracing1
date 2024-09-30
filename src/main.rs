@@ -63,8 +63,22 @@ fn main() {
 
 #[allow(unused_variables)]
 pub fn ray_color(r: &Ray) -> image::Rgba<u8> {
-    let unit_dir = r.direction.unit();
-    let a = 0.5 * (unit_dir.y + 1.0);
+    if hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, r) {
+        Vec3::new(1.0, 0.0, 0.0).rgba()
+    } else {
+        let unit_dir = r.direction.unit();
+        let a = 0.5 * (unit_dir.y + 1.0);
 
-    (Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a).rgba()
+        (Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a).rgba()
+    }
+}
+
+pub fn hit_sphere(center: &Point3, radius: f32, r: &Ray) -> bool {
+    let oc = *center - r.origin;
+    let a = r.direction.dot(&r.direction);
+    let b = -2.0 * r.direction.dot(&oc);
+    let c = oc.dot(&oc) - radius * radius;
+    let discriminannt = b * b - 4.0 * a * c;
+
+    discriminannt >= 0.0
 }
