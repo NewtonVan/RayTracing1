@@ -1,12 +1,14 @@
 mod color;
 mod ray;
+mod rtweekend;
 mod vec3;
 
 use color::write_color;
 use flexi_logger::{Logger, WriteMode};
 use log::info;
-use ray::Ray;
-use std::io;
+use ray::{HitRecord, Hittable, HittableList, Ray, Sphere};
+use rtweekend::INFINITY;
+use std::{io, sync::Arc};
 use vec3::{Point3, Vec3};
 
 fn main() {
@@ -25,6 +27,11 @@ fn main() {
         let img_height = (img_width as f32 / aspect_ratio) as i32;
         img_height.max(1)
     };
+
+    // world
+    let mut world = HittableList::new();
+    world.add(Arc::new(Sphere::new(Point3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Arc::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0)));
 
     // Camera
     let focal_length = 1f32;
@@ -54,31 +61,37 @@ fn main() {
                 pixel00_loc + (pixel_delta_u * i as f32) + (pixel_delta_v * j as f32);
             let ray_direction = pixel_center - camera_center;
             let r = Ray::new(camera_center, ray_direction);
-            let pixel_color = ray_color(&r);
+            let pixel_color = ray_color(&r, &world);
 
             write_color(&mut handle, pixel_color).unwrap();
         }
     }
 }
 
-#[allow(unused_variables)]
-pub fn ray_color(r: &Ray) -> image::Rgba<u8> {
-    if hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, r) {
-        Vec3::new(1.0, 0.0, 0.0).rgba()
+pub fn ray_color(r: &Ray, world: &dyn Hittable) -> image::Rgba<u8> {
+    let mut rec = HitRecord::default();
+    let color_vec = if world.hit(r, 0.0, INFINITY, &mut rec) {
+        (rec.normal + Vec3::new(1.0, 1.0, 1.0)) * 0.5
     } else {
         let unit_dir = r.direction.unit();
         let a = 0.5 * (unit_dir.y + 1.0);
 
-        (Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a).rgba()
-    }
+        Vec3::new(1.0, 1.0, 1.0) * (1.0 - a) + Vec3::new(0.5, 0.7, 1.0) * a
+    };
+
+    color_vec.rgba()
 }
 
-pub fn hit_sphere(center: &Point3, radius: f32, r: &Ray) -> bool {
+pub fn hit_sphere(center: &Point3, radius: f32, r: &Ray) -> f32 {
     let oc = *center - r.origin;
     let a = r.direction.dot(&r.direction);
     let b = -2.0 * r.direction.dot(&oc);
     let c = oc.dot(&oc) - radius * radius;
     let discriminannt = b * b - 4.0 * a * c;
 
-    discriminannt >= 0.0
+    if discriminannt < 0.0 {
+        -1.0
+    } else {
+        (-b - discriminannt.sqrt()) / (2.0 * a)
+    }
 }
