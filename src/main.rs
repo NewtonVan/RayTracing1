@@ -6,7 +6,7 @@ mod vec3;
 use color::write_color;
 use flexi_logger::{Logger, WriteMode};
 use log::info;
-use ray::{HitRecord, Hittable, HittableList, Ray, Sphere};
+use ray::{HitRecord, Hittable, HittableList, Interval, Ray, Sphere};
 use rtweekend::INFINITY;
 use std::{io, sync::Arc};
 use vec3::{Point3, Vec3};
@@ -70,7 +70,7 @@ fn main() {
 
 pub fn ray_color(r: &Ray, world: &dyn Hittable) -> image::Rgba<u8> {
     let mut rec = HitRecord::default();
-    let color_vec = if world.hit(r, 0.0, INFINITY, &mut rec) {
+    let color_vec = if world.hit(r, Interval::new(0.0, INFINITY), &mut rec) {
         (rec.normal + Vec3::new(1.0, 1.0, 1.0)) * 0.5
     } else {
         let unit_dir = r.direction.unit();
