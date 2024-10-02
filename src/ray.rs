@@ -1,7 +1,51 @@
 #![allow(dead_code)]
+use core::f32;
 use std::sync::Arc;
 
-use crate::vec3::{Point3, Vec3};
+use crate::{
+    rtweekend::INFINITY,
+    vec3::{Point3, Vec3},
+};
+
+pub struct Interval {
+    pub min: f32,
+    pub max: f32,
+}
+
+impl Interval {
+    pub fn default() -> Self {
+        Self {
+            min: INFINITY,
+            max: f32::NEG_INFINITY,
+        }
+    }
+
+    pub fn new(min: f32, max: f32) -> Self {
+        Self { min, max }
+    }
+
+    pub fn size(&self) -> f32 {
+        self.max - self.min
+    }
+
+    pub fn contains(&self, x: f32) -> bool {
+        self.min <= x && x <= self.max
+    }
+
+    pub fn surrounds(&self, x: f32) -> bool {
+        self.min < x && x < self.max
+    }
+}
+
+pub const EMPTY_INTERVAL: Interval = Interval {
+    min: f32::INFINITY,
+    max: f32::NEG_INFINITY,
+};
+
+pub const UNIVERSE_INTERVAL: Interval = Interval {
+    min: f32::INFINITY,
+    max: f32::NEG_INFINITY,
+};
 
 pub struct Ray {
     pub origin: Point3,
@@ -37,7 +81,7 @@ impl HitRecord {
 }
 
 pub trait Hittable {
-    fn hit(&self, r: &Ray, ray_tmin: f32, ray_tmax: f32, rec: &mut HitRecord) -> bool;
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
 }
 
 pub struct Sphere {
@@ -55,7 +99,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, r: &Ray, ray_tmin: f32, ray_tmax: f32, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let oc = self.center - r.origin;
         let a = r.direction.squared_length();
         let h = r.direction.dot(&oc);
@@ -70,9 +114,9 @@ impl Hittable for Sphere {
 
         // Find the nearest root that lies in the acceptable range.
         let mut root = (h - sqrtd) / a;
-        if root <= ray_tmin || root >= ray_tmax {
+        if !ray_t.surrounds(root) {
             root = (h + sqrtd) / a;
-            if root <= ray_tmin || root >= ray_tmax {
+            if !ray_t.surrounds(root) {
                 return false;
             }
         }
@@ -119,14 +163,14 @@ impl HittableList {
 
 // Implement the Hittable trait for HittableList.
 impl Hittable for HittableList {
-    fn hit(&self, r: &Ray, ray_tmin: f32, ray_tmax: f32, rec: &mut HitRecord) -> bool {
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let mut temp_rec = HitRecord::default();
         let mut hit_anything = false;
-        let mut closest_so_far = ray_tmax;
+        let mut closest_so_far = ray_t.max;
 
         // Iterate over all objects and find the closest hit.
         for object in &self.objects {
-            if object.hit(r, ray_tmin, closest_so_far, &mut temp_rec) {
+            if object.hit(r, Interval::new(ray_t.min, closest_so_far), &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec.clone();
