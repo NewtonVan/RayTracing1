@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 use std::f32::{MAX as f32_MAX, MIN as f32_MIN};
-use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Neg, Sub};
+
+use crate::ray::Interval;
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct Vec3 {
@@ -20,6 +22,12 @@ impl Add for Vec3 {
             y: self.y + rhs.y,
             z: self.z + rhs.z,
         }
+    }
+}
+
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 
@@ -169,10 +177,11 @@ impl Vec3 {
     }
 
     pub fn rgba(&self) -> image::Rgba<u8> {
+        let intensity = Interval::new(0.0, 0.999);
         image::Rgba([
-            (self.x * 255.99) as u8,
-            (self.y * 255.99) as u8,
-            (self.z * 255.99) as u8,
+            (intensity.clamp(self.x) * 255.99) as u8,
+            (intensity.clamp(self.y) * 255.99) as u8,
+            (intensity.clamp(self.z) * 255.99) as u8,
             255,
         ])
     }
