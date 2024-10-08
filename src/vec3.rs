@@ -3,6 +3,7 @@ use std::f32::{MAX as f32_MAX, MIN as f32_MIN};
 use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use crate::ray::Interval;
+use crate::rtweekend::{random_double, random_double_in_range};
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
 pub struct Vec3 {
@@ -176,18 +177,61 @@ impl Vec3 {
         self / self.length()
     }
 
+    fn linear_to_gamma(x: f32) -> f32 {
+        if x > 0.0 {
+            x.sqrt()
+        } else {
+            0.0
+        }
+    }
+
     pub fn rgba(&self) -> image::Rgba<u8> {
         let intensity = Interval::new(0.0, 0.999);
         image::Rgba([
-            (intensity.clamp(self.x) * 255.99) as u8,
-            (intensity.clamp(self.y) * 255.99) as u8,
-            (intensity.clamp(self.z) * 255.99) as u8,
+            (intensity.clamp(Self::linear_to_gamma(self.x)) * 255.99) as u8,
+            (intensity.clamp(Self::linear_to_gamma(self.y)) * 255.99) as u8,
+            (intensity.clamp(Self::linear_to_gamma(self.z)) * 255.99) as u8,
             255,
         ])
     }
 
     pub fn elemul(a: Vec3, b: Vec3) -> Vec3 {
         Vec3::new(a.x * b.x, a.y * b.y, a.z * b.z)
+    }
+
+    pub fn random() -> Vec3 {
+        Vec3 {
+            x: random_double(),
+            y: random_double(),
+            z: random_double(),
+        }
+    }
+
+    pub fn random_in_range(min: f32, max: f32) -> Vec3 {
+        Vec3 {
+            x: random_double_in_range(min, max),
+            y: random_double_in_range(min, max),
+            z: random_double_in_range(min, max),
+        }
+    }
+
+    pub fn random_unit_vec() -> Vec3 {
+        loop {
+            let p = Self::random_in_range(-1.0, 1.0);
+            let lensq = p.squared_length();
+            if 1e-160 < lensq && lensq <= 1.0 {
+                return p / lensq.sqrt();
+            }
+        }
+    }
+
+    pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
+        let on_unit_sphere = Self::random_unit_vec();
+        if on_unit_sphere.dot(normal) > 0.0 {
+            on_unit_sphere
+        } else {
+            -on_unit_sphere
+        }
     }
 }
 
