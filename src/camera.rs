@@ -1,4 +1,4 @@
-use std::io;
+use std::{borrow::BorrowMut, io};
 
 use log::info;
 
@@ -113,8 +113,18 @@ impl Camera {
 
         let mut rec = HitRecord::default();
         let color_vec = if world.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let direction = rec.normal + Vec3::random_unit_vec();
-            Self::ray_color(&Ray::new(rec.point, direction), depth - 1, world) * 0.5
+            let mut scattered = Ray::new(r.origin, r.direction);
+            let mut attenuation = Vec3::zero();
+            if rec.mat.as_ref().unwrap().borrow_mut().scatter(
+                r,
+                &rec,
+                &mut attenuation,
+                &mut scattered,
+            ) {
+                Vec3::elemul(Self::ray_color(&scattered, depth - 1, world), attenuation)
+            } else {
+                Vec3::new(0.0, 0.0, 0.0)
+            }
         } else {
             let unit_dir = r.direction.unit();
             let a = 0.5 * (unit_dir.y + 1.0);

@@ -3,6 +3,7 @@ use core::f32;
 use std::sync::Arc;
 
 use crate::{
+    material::Material,
     rtweekend::INFINITY,
     vec3::{Point3, Vec3},
 };
@@ -77,6 +78,7 @@ pub struct HitRecord {
     pub point: Point3,
     pub normal: Vec3,
     pub t: f32,
+    pub mat: Option<Arc<dyn Material>>,
     front_face: bool,
 }
 
@@ -97,13 +99,15 @@ pub trait Hittable {
 pub struct Sphere {
     center: Vec3,
     radius: f32,
+    mat: Option<Arc<dyn Material>>,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Self {
+    pub fn new(center: Vec3, radius: f32, mat: &Arc<dyn Material>) -> Self {
         Self {
             center,
             radius: radius.max(0.0),
+            mat: Some(mat.clone()),
         }
     }
 }
@@ -135,6 +139,7 @@ impl Hittable for Sphere {
         rec.point = r.at(rec.t);
         let outward_normal = (rec.point - self.center) / self.radius;
         rec.set_face_normal(r, &outward_normal);
+        rec.mat = self.mat.clone();
 
         true
     }

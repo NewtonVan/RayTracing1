@@ -153,6 +153,11 @@ impl Vec3 {
         }
     }
 
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        self.x < s && self.y < s && self.z < s
+    }
+
     pub fn length(&self) -> f32 {
         self.squared_length().sqrt()
     }
@@ -232,6 +237,10 @@ impl Vec3 {
         } else {
             -on_unit_sphere
         }
+    }
+
+    pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+        (*v) - (*n) * 2.0 * v.dot(n)
     }
 }
 
