@@ -63,10 +63,14 @@ fn main() {
     camera.samples_per_pixel = 100;
     camera.max_depth = 50;
 
-    camera.vfov = 90.0;
+    camera.vfov = 20.0;
     camera.look_from = Point3::new(-2.0, 2.0, 1.0);
     camera.look_at = Point3::new(0.0, 0.0, -1.0);
     camera.vup = Vec3::new(0.0, 1.0, 0.0);
+
+    // defocus blur
+    camera.defocus_angle = 10.0;
+    camera.focus_dist = 3.4;
 
     camera.render(&world);
 }

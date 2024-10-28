@@ -249,6 +249,19 @@ impl Vec3 {
         let r_out_parallel = *n * -((1.0 - r_out_perp.squared_length()).abs().sqrt());
         r_out_perp + r_out_parallel
     }
+
+    pub fn random_in_unit_disk() -> Vec3 {
+        loop {
+            let p = Vec3::new(
+                random_double_in_range(-1.0, 1.0),
+                random_double_in_range(-1.0, 1.0),
+                0.0,
+            );
+            if p.squared_length() < 1.0 {
+                return p;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
